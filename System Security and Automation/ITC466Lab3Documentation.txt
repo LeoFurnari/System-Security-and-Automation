@@ -1,0 +1,114 @@
+Noall, Tingley, Furnari
+
+Feb 16, 2016- 2pm
+
+Started with the OSPF in the routerBOARD.
+10.2.8.1/webfig/#RoutingOSPF
+Added an interface, network, and area
+On the router (through the win box)
+en
+conf T
+Router ospf 5
+Network 192.168.209.88 255.255.255.248 area 5
+Router-id 2.2.5.2
+Noall
+
+Feb 18, 2016- 10:15am
+
+Changed the RouterID in the instances
+Got rid of the static IPs
+Created the network and mask for our network on the router
+Conf t
+Right clicked on the ‘router ospf 5’ line
+Typed in ‘network 192.168.209.88 0.0.0.7 area 5’
+vlan 10’s IP and inversed mask
+Created a firewall to accept input from OSPF, gateway interface
+ 
+
+HH
+
+wr (copies the configs into a file)
+Protocol (1(icmp)) is accepting pings
+Get external access (I don’t remember where I was going with this thought..)
+
+ 
+
+Noall, Tingley
+
+Feb 18, 2016- 1:45pm
+
+*Attempted* to create the firewalls- DNS, HTTP, HTTPS, SSH; to forward acceptance.
+Created forward ping and inside network acceptance.
+Tried to test the firewalls to make sure they work
+ 
+
+ 
+
+Tingley
+
+Feb 18, 2016- 3:30
+
+Added all of the port filter(destination) to the firewall
+Added destination address
+Tested the firewall using nmap
+Noall, Tingley
+
+Feb 18, 2016- 6:10pm
+
+Got rid of dhcp to accomplish ssh on the Debian
+Furnari, Noall, Tingley
+
+Feb 21, 2016- 12pm
+
+Installed Cygwin for the Win box
+Had to go back through to make sure we installed the right packages (including the vim package)
+Had to go in through the sshd_config and change the commented out features- looked at the ns2 to make sure the settings were the same
+Created a user on the Cygwin to match others
+Installed ssh on the ns1 and ns2
+Made it so that ‘root’ was blocked, but allowed ‘leo’ (through sshd_config file with the tag AllowUsers and PermitRootLogin as ‘no’)
+Created a private key for the ssh holders
+~/.ssh$ is the location from the home dir
+id_rsa inside of the ~/.ssh$ from the home dir
+Made sure that the root was blocked on the boxes 2 and 3
+Installed ‘sudo’ on box 2
+Apt-get install sudo
+Created public keys for ssh access without password
+ 
+
+Had to re-do all of the public keys…. Here’s the process-
+
+Can connect from debian to ns2
+Can connect from debian to ns1
+Can connect from ns1 to debian
+Can connect from ns1 to ns2
+Can connect from ns2 to debian
+Can connect from ns2 to ns1
+Can connect from windows to debian
+Can connect from windows to ns2
+Can connect from windows to ns1
+Got rid of all the previous ssh pub key files
+ 
+
+Furnari, Noall, Tingley
+
+Feb 21, 2016- 5:20(ish)pm
+
+Created the other users with the ssh directory
+ 
+
+Noall
+
+Feb 22, 2016- 8am
+
+Commented out the AllowUsers tag; restarted ssh (ns1 (fix sudo: visudo; on debian), ns2)
+Changed the name server (vi /etc/resolv.conf)
+search group5.itc
+nameserver 10.2.8.2
+nameserver 10.2.8.6
+Deleted the old ssh files on the user accounts with
+for i in `ls /home` ; do rm –rf /home/$i/.ssh; done
+Created a new ssh for all the users
+ssh – keygen
+ls –lart
+Checked the files (if id_rsa and id_rsa.pub was there then...)
+cat id_rsa.pub > authorized_keys

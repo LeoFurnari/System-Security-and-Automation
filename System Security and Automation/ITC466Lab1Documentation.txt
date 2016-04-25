@@ -1,0 +1,232 @@
+Documentation for the Network Setup lab
+
+When: Feb 2, 2016; 6:45pm
+
+What: Our target purpose for this time around is just to get everything set up and installed so when we come back a different day, we won’t have to worry about the installation process.
+
+How/Why:
+
+We used a bootable USB in order to get the Win 10 box, we used port 107 to achieve the Debian download since it was on the network.
+
+interface FastEthernet0/0/0
+
+ switchport access vlan 10
+
+ no ip address
+
+-This command gave us access to a VLAN that we created. We needed it to create a network.
+
+interface Vlan10
+ ip address 172.16.53.2 255.255.255.0
+ ip nat outside
+ ip virtual-reassembly in
+-Here we set up a usable IP address so that we can connect to it from other devices.
+
+ 
+
+Quick notes from during lab times:
+
+Tower 1 = Win 10
+
+Tower 2 = Debian
+
+Tower 3 = ESXi 6.0
+
+Used Port 107 to achieve Debian download
+
+192.168.88.1/webfig (site)
+
+IP address: 172.16.48.187
+
+MAC: D4 CA 60 0E 2D FB
+
+Gateway: 172.16.48.161
+
+Default DHCP Server Range: 192.168.88.10 – 192.16.88.25
+
+Auto IP when not connected to the win server- 169.254.89.27
+
+Remoted into a computer through SSH for router configuration- 141.209.98.157: didn’t work
+
+Downloaded Putty for further access: didn’t work
+
+Tried to configure router from the other side (Adele style) with Putty
+
+Through Putty, we tried out the cidr mask command to make it easier to get the subnet mask: didn’t work
+
+Realized we had a cord in the wrong port (layer 2)- then we assigned the IP Address 10.2.8.1 to fast Ethernet 0/0
+
+Used the command ‘do sh run’ to get the IP information we needed to figure out what to set the IP to a different switch so we can create the gateway of last resort- didn’t really work
+
+Followed the Fig 2/ Table 3 gig- switched out a cord and tried to assign the Win Server to the Cisco 1841 by setting an IP up on the VLAN
+
+Set up the IP NAT inside/ outside
+
+The Ethernet has a warning sign instead of an X. IP given in that warning was 172.16.48.2
+
+Port 111 fa0/0
+
+ 
+
+When: Feb 7, 2016; 12:30pm
+
+What: We tried to get the SSH working between the lab computer and our group computer so we wouldn’t have to run around to the other side constantly. This helped us be able to configure the router from one computer.
+
+How/Why:
+
+group5(config)#int vlan 2
+group5(config-if)#i
+*Feb  7 17:37:54.829: %LINEPROTO-5-UPDOWN: Line protocol on Interface Vlan2, changed state to downp
+% Incomplete command.
+ 
+ 
+group5(config-if)#ip address 192.168.209.95 255.255.255.248
+Bad mask /29 for address 192.168.209.95
+group5(config-if)#ip address 192.168.209.1 255.255.255.248
+ 
+
+group5(config-if)#switchport access vlan 2
+-Gave us access to put the VLAN 2 settings onto the switch
+
+group5(config)#int vlan 2
+group5(config-if)#no  ip address 192.168.209.1 255.255.255.248
+group5(config-if)# ip address 192.168.209.1 255.255.255.248
+group5(config-if)#no  ip address 192.168.209.1 255.255.255.248
+group5(config-if)#ip address 192.168.209.89 255.255.255.248
+-Put an IP onto the VLAN 2
+
+ 
+
+These are the configurations we used for the switch.
+
+Switch#conf t
+Enter configuration commands, one per line.  End with CNTL/Z.
+Switch(config)#hostname s1
+s1(config)#
+-We configured a name for it for easier recognition later.
+
+s1(config)#int vlan 2
+s1(config-if)#no ip address 10.2.8.2 255.255.254.0
+s1(config-if)#ip address 10.2.8.2 255.255.255.0
+s1(config-if)#exit
+s1(config)#int vlan 3
+s1(config-if)#ip address 10.2.9.1 255.255.255.0
+s1(config-if)#no ip address 10.2.9.1 255.255.255.0
+s1(config-if)#ip address 10.2.9.2 255.255.255.0
+-We gave the VLANs usable IPs.
+ 
+s1(config)#int gigabitEthernet 1/0/3
+s1(config-if)#switchport access vlan 2
+% Access VLAN does not exist. Creating vlan 2
+-Created VLAN 2
+
+s1(config)#int gi1/0/2
+s1(config-if)#switchport access vlan 3
+% Access VLAN does not exist. Creating vlan 3
+-Created VLAN 3
+
+group5(config)#ip route 192.168.209.88 255.255.255.248 172.16.48.242
+ 
+
+ 
+
+Quick notes from during lab times:
+
+New IP: 192.168.209.89
+
+Subnet: 255.255.255.248
+
+Gateway: 192.168.209.89
+
+Preferred DNS server: 172.16.48.2
+
+Removed the IP the f/e- 0/0
+
+Swapped the IP on the 0x link, changed the Win box’s IP and got SSH to work
+
+Had to change the IP and Gateway to keep it in our block of broadcast- made SSH not work
+
+Took the server network (given) and split it in half so that the file and ESXi server can have their own VLAN. But it wasn’t able to be put on the same network.
+
+ 
+
+When: Feb 7, 2016; 7:30pm
+
+What: We tried to finish up the lab with the last bit of trunking and deliverables. Some complications arose, but we did our best.
+
+How/Why:      
+
+s1(config)#int vlan 105
+s1(config-if)#172.16.48.242 255.255.255.252
+             ^
+% Invalid input detected at '^' marker.
+s1(config-if)#ip add 172.16.48.242 255.255.255.252
+-Added the indicated IP to the indicated VLAN.
+
+s1(config)#int gi1/0/1
+s1(config-if)#switchport access vlan 105
+% Access VLAN does not exist. Creating vlan 105
+-Created the VLAN 105 on the switchport.
+
+Quick notes from during lab times:
+
+Tried to get trunking working between the two networks
+
+Established an SSH for the Catalyst switch
+
+Tried to create a static route on the management network so it could reach the server network
+
+Trunking on Catalyst switch gi1/0/1
+
+VLAN 105 on both the RouterBOARD and the Cisco 1841
+
+ 
+
+When: Feb 8, 2016; 3:15pm
+
+What: Last ditch effort to finish the lab
+
+How/Why:
+
+ 
+
+Enter configuration commands, one per line.  End with CNTL/Z.
+group5(config)#no ip route 0.0.0.0 0.0.0.0 172.16.53.1
+group5(config)#no ip route 192.168.209.88 255.255.255.248 172.16.48.242
+group5(config)#no ip route 192.168.209.88 255.255.255.248 10.2.8.2
+group5(config)#no ip route 192.168.209.88 255.255.255.248 10.2.9.2
+group5(config)#no interface Vlan105
+group5(config)#no vlan106
+*Feb  8 20:10:32.122: %LINK-5-CHANGED: Interface Vlan105, changed state to administratively dow5
+                      ^
+% Invalid input detected at '^' marker.
+group5(config)#no vlan105
+                      ^
+% Invalid input detected at '^' marker.
+group5(config)#no vlan 105
+-Got rid of the IPs and VLAN that wasn’t needed
+
+group5(config)#int fa0/0.105
+group5(config-subif)#enc
+group5(config-subif)#encapsulation do
+group5(config-subif)#encapsulation dot1Q ?
+  <1-4094>  IEEE 802.1Q VLAN ID
+group5(config-subif)#encapsulation dot1Q 105
+group5(config-subif)#
+*Feb  8 20:11:37.486: %LINK-3-UPDOWN: Interface FastEthernet0/0, changed state to up
+group5(config-subif)#
+group5(config-subif)#
+group5(config-subif)# ip address 172.16.48.241 255.255.255.252
+-Created the virtual interface of the VLAN 105 and created it’s IP address
+
+ 
+
+Quick notes from during lab times:
+
+Got rid of the 3 IP routes that were previously created
+
+Created a virtual interface on the fa0/0 with the command fa0/0.105, which created the 105 VLAN
+
+An IP to that interface was then added
+
+Tried to create the gateway of last resort on the 1841

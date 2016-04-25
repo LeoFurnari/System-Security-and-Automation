@@ -1,0 +1,207 @@
+April 6th, 2016, 5:30PM
+
+Furnari
+
+SNMP
+
+installed net-snmp on debian, ns1, and ns2 with "sudo apt-get install snmpd"
+Create backups for snmp.conf for each.
+Changed community Strings in debian, ns1 to those specified by the rubric. Not sure what to do with ns2, due to its absence. Will attempt to recreate it.
+Configured snmp on Cisco 1841 and Cisco c2960x by running
+"snmp-server community public RO g5pub" for the Read-Only community String
+"snmp-server community private RO g5priv" for the Read-Write community String
+Ran "snmp-server enable traps syslog" on both routers because it seemed like something that would need to be done to eventually move the system logs over to the LogAnalyzer.
+ 
+
+Not sure where the snmp directory is on ns2...created directory manually and placed a blank configuration file inside of it.
+
+LogAnalyzer
+
+installed LogAnalyzer on ns2 with "wget http://download.adiscon.com/loganalyzer/loganalyzer-4.1.3.tar.gz"
+unzipped the directory into /etc with "tar xzf loganalyzer-4.1.3.tar.gz"
+ 
+
+April 7th, 2016, 2:00 PM
+
+Tingley
+
+Mikrotik
+
+click on IP
+go down to snmp
+clicked Enabled and communities
+In communities added gr5priv(security = private; read-write access ) and gr5pub(security = none read; access only ) no ip address for either, error if one is put in.
+April 8th, 2016, 4:00 PM
+
+Tingley
+
+Debian, ns1, ns2
+
+changed the smpd.conf file
+rocommunity public default g5pub -V systemonly
+rocommunity g5pub
+rwcommunity g5priv
+Ran "snmpwalk -v2c -cg5pub localhost" and "snmpwalk -v2c -cg5priv localhost" to see if it is working (not working on ns2).
+April 10th, 2016, 3:00 PM
+
+Noall, Tingley
+
+Windows server "https://support.managed.com/kb/a764/how-to-install-snmp-and-configure-the-community-string.aspx"
+In server manager, Add Roles and Features
+went to Features, clicked SNMP Service
+Administrative Tools, double  click Services
+Right click SNMP Service, go to Security tab
+add g5pub and g5priv
+apt-get upgrade (ns2)
+Changed the snmpd.conf file
+Commented out
+rocommunity public default g5pub –V systemonly
+This got rid of an error on the service snmpd.conf status
+Debian will run the snmpd.conf file just fine, but ns1 and ns2 throw up errors. They’re the same file, so it doesn’t make sense. Ask Lucas on LogAnalyzer (how to install- doesn’t make sense with what we’ve seen) and ns2 (snmp not working)
+
+ 
+
+Noall, Tingley
+
+April 14, 2016; 10am
+
+Attempted the LogAnalyzer
+Attempted to install check_mk
+Broke ns1 with failure
+wget *insert web link for the amd64*
+dpkg –i *insert jessie_amd64.deb file*
+The snmpd.conf file was altered-
+Commented out a line, and uncommented out a different line (I’ll be more specific later...)
+WHY THIS LAB SUCK. Breaking things all over the place. Hooray.
+
+ 
+
+HH:
+
+whereis *insert file*
+
+ 
+
+Furnari, Noall, Tingley
+
+April 14, 2016, 7:00pm
+
+ 
+
+Installed OMD on ns1
+wget http://files.omdistro.org/nightly/1.31.20160406/omd-1.31.20160406.jessie.amd64.deb
+Installed it with dpkg
+dpkg –i omd-1.31.20160406.jessie.amd64.deb
+Solve the errors
+apt-get install –f
+Usrnm: omdadmin ; pswd: omd
+check_mk multisite option
+default web UI: http://ns1/group5
+(Check_MK is running, just need to configure it)
+
+HH:
+
+(Next time…) http://www.unixmen.com/install-and-configure-rsyslog-in-centos-6-4-rhel-6-4/
+
+ 
+
+Noall, Tingley
+
+April 16, 2016, 4pm
+
+ns2
+apt-get install xinetd
+apt-get install apache2
+http://www.unixmen.com/install-and-configure-rsyslog-in-centos-6-4-rhel-6-4/
+In the rsyslog
+Uncommented:
+$ModLoad imudp
+$ModLoad imtcp
+Moved the extracted loganalyzer pkg to the Apache document root folder
+mv loganalyzer-3.6.5/src/ /var/www/html/loganalyzer
+mv loganalyzer-3.6.5/contrib/* /var/www/html/loganalyzer/
+Set the file permissions to the following files and run the configure.sh script.
+# cd /var/www/html/loganalyzer/
+chmod +x configure.sh secure.sh
+./configure.sh
+CISCO 1841
+Re-doing the conf
+Got rid of:
+no snmp-server community public RO g5pub
+no snmp-server community private RW g5priv
+no snmp-server enable traps syslog
+Instead put:
+snmp-server enable traps
+snmp-server community g5pub RO
+snmp-server community g5priv RW
+Mikrotik
+Added in SNMP
+Pub and priv
+10.2.8.0/23
+
+ 
+
+WHY IS LOGANALYZER IN CODE. WHHHYYYY.
+
+Check_mk- can’t get any of the agents downloaded/ no check_mk file/client anywhere in ns1 (and ns2 if we needed it there)
+
+SNMP works for ns1, ns2, debian, but can’t get it to work on the CISCO items
+
+ 
+
+Noall
+
+April 18, 2016, 1pm
+
+Installed PHP on the loganalyzer
+Apt-get install php5
+Added syslog
+adduser www-data adm
+rsyslog
+UDP
+Uncommented both items
+*.* @ns2:514
+Installed WinSCP
+Copying debian agents to the
+Debian
+Got rid of everything in the host.allow
+rsyslog.conf
+Added *.* @ns2:514
+snmd.conf
+Commented out: adentAddress udp:127.0.0.1:161
+Uncommented: adentAddress udp:161,udp6:[::1]:161
+Added:
+rocommunity g5pub
+rwcommunity g5priv
+ns1
+apt-get install isc-dhcp-server
+Mikrotik
+System > logging
+Created an action:
+Name: Syslog
+Type: Remote
+Remote Addr: 10.2.8.6
+Remote Port: 514
+Src. Addr: 10.2.8.1
+(check the BSD Syslog)
+S. Facility: syslog
+S. Severity: info
+Modified a rule:
+Topics- info
+Action- Syslog
+Check_mk
+Added all the hosts:
+ns1
+ns2
+debian
+c1841
+SNMP Community- g5pub
+Agent Type- SNMP
+c2960x
+SNMP Community- g5pub
+Agent Type- SNMP
+10.2.8.1 (mikro)
+SNMP Community- g5pub
+Agent Type- SNMP
+Winserver
+Added to allow the check_mk in the inbound rules of the Windows Firewall with Advanced Security (did this on the win10 box too)

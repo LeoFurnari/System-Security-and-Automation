@@ -1,0 +1,121 @@
+Nick Tingley, Leo Furnari
+
+February 11th, 2016 - 4:00PM
+
+ 
+
+Used the Windows machine to download the Debian ISO.
+ 
+
+2. Visited the specified IP address on the switch which hosted the ESXi file server, downloaded VMware vSphere.
+
+ 
+
+3. Used VMware vSphere to connect to the file server’s datastore.
+
+ 
+
+4. Uploaded Debian ISO to datastore, created 2 virtual machines from Linux operating system. Partitioned system resources accordingly.
+
+ 
+
+5. Installed sudo and vim on both VMs
+
+ 
+
+Noall, Tingley
+
+Feb 12, 2016- 7pm
+
+ 
+
+Helpful hints: For a syntax run: cat /var/log/syslog | grep named
+
+tail –F /var/log/syslog
+named.conf.local
+service bind9 restart
+ls
+Used cd /etc/bind; vi named.conf.options to create the forwarder.
+Reverse lookup file: db.8.2.10.in-addr.apra
+Numbers he 10.2.8.10/ 10.2.8.15
+All that is left from the DNS bit is to create the ns2 as the failover server and writing the zones to files on its own disk.
+
+ 
+
+Furnari, Noall, Tingley
+
+Feb 14, 2016- 7pm
+
+Got the forward and reverse working on ns1
+Installed bind9 on ns2 and tried to finish up the lab by getting ns2 as the failover server and wrote the zones to files on its own disk
+resolv.conf 172.16.48.2
+Gave read and write permissions to all users
+chmod –R a+rw /etc/bind/slave
+ns1: iface eth0 inet dhcp
+#auto eth0
+
+iface eth0 inet static
+
+address 10.2.8.5
+netmask 255.255.254.0
+broadcast 10.2.9.255
+network 10.2.8.0
+gateway 10.2.8.1
+Added to ns1- acl, forwarder subnets, recursion 
+HH:
+
+named.conf.default-zones
+resolv.conf
+ 
+
+Not writing/ reading from slave- not sure if the permissions are correct. Configuration files might be not correct for the forward/ reverse lookup.
+
+ 
+
+Noall
+
+Feb 15, 2016- 8:20am
+
+ 
+
+The acl on the master wasn’t needed, the forwarders didn’t need the 10.2.8.-, allow-recursion was added and the IPs needed for that were also added. The slave had the master files copied over to it.
+
+ 
+
+HH:
+
+ls –lart(h)
+service bind9 stop/ start
+scp
+cat .bash_history
+ 
+
+ 
+
+Noall, Tingley
+
+Feb 15, 2016; 2:30pm
+
+ 
+
+vi /etc/default/isc-dhcp-server
+vi /etc/network/interfaces
+Commented out the allow-hotplug and the iface eth0 inet dhcp
+Enabled the auto eth0
+vi /etc/dhcp/dhcpd.conf
+On 184            1
+int vlan10
+IP helper-address 10.2.8.5
+IPv4 setting for the Ethernet and choose to obtain an IP address automatically
+CMD
+Ipconfig /release
+Ipconfig /renew
+Ran into the problem of DHCP being loaded, but it wasn’t activating- it didn’t have a static IP on it, and there were some missing quotation marks on the ‘option domain-name’ in vi /etc/dhcp/dhcpd.conf 
+ 
+
+HH
+
+ipconf
+vi /etc/network/…….
+Service networking restart
+dhclient

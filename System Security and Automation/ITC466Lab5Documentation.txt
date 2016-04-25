@@ -1,0 +1,430 @@
+Furnari, Noall, Tingley
+
+March 19, 2016- 7pm
+
+Downloaded and installed Win Server2012, opened in VSphere
+Configured NTP (mikrotik was already set up)
+Windows box
+Changed the time zone to Eastern
+Just went to the clock feature and changed the time zone, then refreshed the NTP server
+Cisco 2960:
+ntp server 172.16.48.2 prefer
+clock summer-time EST recurring
+Cisco 1841:
+ntp source vlan105
+clock summer-time EST recurring
+For Active Directory:
+God link: http://sharepointgeorge.com/2012/configuring-active-directory-ad-ds-in-windows-server-2012/ (below is condensed version)
+We changed the computer name to WindowsServer.
+When adding the Active Directory Domain Services Role…
+Went through the options and…
+Add roles and features
+Go to Installation Type
+Choose Role-base or feature-based installation.
+Go to Server Selection
+Choose WindowsServer from the server pool.
+From Server Roles
+Choose Active Directory Domain Services
+Features
+Only selected (and these were the ‘pre-selected’ options):
+Group Policy Management
+.NET Framework 4.5 Features(2 of 7 installed)
+Remote Server Administration Tools
+SMB 1.0/CIFS File Sharing Support (Installed)
+User Interfaces and Infrastructure (2 of 3 installed)
+Windows PowerShell (2 of 5 installed)
+WoW64 Support (Installed)
+AD DS
+Notes about the items installed and such:
+Installing AD DS will also install the DFS Namespaces, DFS Replication, and File Replication services which are required by AD DS
+AD DS requires a DNS server to be installed on the network. If you do not have a DNS server installed, you will be prompted to install the DNS server role on this machine.
+To help ensure that users can still log on to the network in the case of a server outage, install a minimum of two domain controllers for a domain.
+Results
+Restart destination server automatically if required not checked.
+Install Features
+Feature installation - Configuration required. Installation succeeded on WindowsServer.
+Finito
+Then we needed to configure the deployment…
+Going through the options…
+Saw that the AD DS appears in left navigation area in Server Manager, so that’s what was clicked upon.
+Clicked MORE on alert indicating that Configuration is needed.
+Promote server to domain controller under Action.
+Add a new forest, and insert root domain (group5.itc)
+Directory Services Restore Mode (DSRM) password- our usual
+We got a funky error message:
+The DNS Options- ‘A delegation for this DNS server cannot be created because the authoritative parent zone cannot be found or it does not run Windows DNS server. …’
+ 
+Furnari, Noall, Tingley
+March 20, 2016- 12 noon
+ 
+Installed SAMBA Client on ns1, ns2, Debian
+Tried to put Kerberos on Win Server12
+Found out it’s already part of the services after about 45 minutes…..
+Through the AD DS
+Add Roles and Features
+Server Manager
+Installed Web Server IIS
+Added a new user-
+Active Users and Computer
+Right click on group5.itc
+New- User
+false1lj
+Itc466!
+Added ourselves into the mix of users
+ 
+
+Need to figure out how to authenticate the users.
+ 
+ 
+Noall, Tingley
+March 22, 2016- 10am
+ 
+DNS Manager
+Added Reverse Lookup Zones
+Right click for New zone
+Next (primary zone)
+Next (to all DNS servers running on domain controllers in the domain: groupX.itc)
+IPv4 Reverse Lookup Zone
+Network ID: 10.2.8 & 10.2.9
+Next (finish)
+Forward Lookup Zones
+group5.itc folder
+Right click for New Host (A or AAAA)
+Name: ns1/ ns2
+IP Address: corresponding IPs for both
+CREATE associated pointer (PTR) record
+Created a static IP for win server 12
+IP: 10.2.8.3
+Subnet: 255.255.254.0
+Default Gateway: 10.2.8.1
+DNS Server: 172.16.48.2
+ 
+In DNS (ns1 /etc/bind# ls ) change the DNS master and slave to forward zones (web page for this is up)
+ 
+Furnari, Noall, Tingley
+March 24, 2016- 6pm
+ 
+Modified the ns1 DNS forward files
+/etc/bind$ sudo vim named.conf.local
+type forward;
+forward only;
+also-notify (IP for the ns1/2);
+forwards (
+sudo apt-get install samba (on ns1([global] section alterations done ONLY here)/ns2/debian)
+smb.conf
+[global] section
+vfs objects = acl_xattr
+map acl inherit = yes
+store dos attributes = yes
+read only = no
+[homes]
+read only = no
+[ourfiles]
+Comment = home directories
+Read only = no
+locking = no
+path = /root/home/
+guest ok = no
+added a new password
+sudo smbpasswd –a (name)
+(password)
+sudo pbdedit –w –L
+sudo /etc/init.d/samba restart
+sudo apt-get install sssd (ns1)
+Said ‘yes’ to the question it asked
+Created an sssd.conf file
+vim sssd.conf
+Then added/ wrote
+[sssd]
+domains = group5.itc
+config_file_version = 2
+services = nss, pam
+default_domain_suffix = GROUP5
+
+[domain/group5.itc]
+ad_domain = group5.itc
+krb5_realm = GROUP5.ITC
+realmd_tags = manages-system joined-with-adcli
+cache_credentials = True
+id_provider = ad
+krb5_store_password_if_offline = True
+default_shell = /bin/bash
+ldap_id_mapping = True
+use_fully_qualified_names = False
+fallback_homedir = /home/%d/%u
+access_provider = ad
+sudo apt-get install realmd (ns1)
+Said ‘yes’ to the question it asked (takes up a certain amount of disk space)
+sudo realm join --user=noall1ka group5.itc
+chmod 600 sssd.conf
+ 
+
+ 
+KNOW HOW TO DO THE BACKUPS. DO NOT DO THE AUTHENS WITHOUT THE BACKUPS.
+Win support in [global] section of the smb.conf
+Do we have to change the ns2 DNS slave to the forward zones as well? If so, how? The DNS manager is throwing an error: automated test query failed- why?
+ 
+Noall
+March 27, 2016, 8pm
+ 
+Changed the commands of the tar file in Debian
+root /mnt/debianbackup debianbackups.sh
+tar –cpzf
+Create; preserving files and directory permissions; tells tar to compress the files further to reduce the size of tar file; allows tar to get file name
+Put a space in between /usr/home/nick and /usr/home/ifconfig
+Had to create the backup files for ns1 and ns2
+Used the same file as debian
+ns2: ns2backups.sh
+ns1: ns1backups.sh
+Cron is in the /etc directory
+Tar files (http://www.aboutdebian.com/tar-backup.htm)
+Debian (/mnt/debianbackup)
+backup.tar.gz
+ns1 (/mnt/ns1backup)
+backup.tar.gz
+ns2 (/mnt/ns2backup)
+backup.tar.gz
+TO CHECK THE FILES
+Go into the folder files (/mnt/debianbackup)
+Then type: tar -tf backup.tar.gz
+All 3 (ns1, ns2, debian) checked out with this line.
+TO DO A FULL RESTORE (/mnt/fullbackup)
+tar –zxvpf /fullbackup.tar.gz
+ 
+ 
+Lucas- ask to see if the is done correctly (as well as the other backup files).
+ 
+Noall
+March 28, 2016, 8:20am
+ 
+Changed DNS server IP 172.16.48.2
+Unchecks IPv6
+Allowed remote access in DNS manager
+Added 10.2.8.3 onto the remote access in Royal TS
+Renamed the winserver on the DNS manager
+Added 172.16.48 into the reverse lookup zones in DNS M
+Added the host of c1841, c2960s, and debian
+Changed the ns1 /etc/bind named.conf.local file (got rid of a few lines)
+Changed ^ in ns2 (got rid of a few lines and added the forwarders line
+Restarted bind9 after both
+HAD to change the ESXi IP to 10.2.8.7
+Added this as a host in the DNS M
+Changed the win10 box’s name and domain
+Resolved the name (winserver.group5.itc.) and a few of the IPs (10.2.8.3) all throughout the DNS M (make sure the name is right when creating it.. makes it easier for later times)
+ 
+Royal TS is in public(?)
+Radius (mikrotik, boards), sssd (debian (do ns1 first) make snapshots),
+ 
+Noall, Tingley
+March 29, 2016; 10:30am
+ 
+Created a home directory in debian mnt folder
+Removed samba from ns1, ns2 (should only be on debian)
+GET SSSD INSTALLED AND CONFIGURED BEFORE SAMBA.
+Got sssd semi-started (web page should be up)
+join_ad.sh
+joined group: group5.itc
+Under noall1ka as an admin
+Changed the use_fully_qualified to false
+Did this in the sssd.conf file
+Added a domain to the resolv.conf
+And a nameserver
+AD U&C
+Changed Lucas’s user- he made it himself (but
+Debian
+Changed the realms in the etc/krb5.conf
+And the domain_name
+apt-get install sssd-krb5-
+Added wins server to the roles and features
+ 
+Noall
+March 29, 2016; 2:40pm
+ 
+Removed debian from the joined realm
+Tried to join it to the adcli
+Added realmd sssd to ns1
+ 
+Noall
+March 29, 2016; 4:45pm
+ 
+Lucas wiped the server (dns, adds) and created the domain from scratch…
+Broke Lucas
+resolv.conf can’t be changed or removed
+SOLVED: chattr –i resolv.conf
+ns2
+krb5.conf
+realms group5.itc was changed/ added to
+domain_realm was added to
+ 
+Check the config to be sure (he’s pretty sure it’s right)
+(3)Create home directory (linux to linux, linux to win)- do not auto create- on the RAID5 (share them out- share from fileserver to ns1/ns2, understand how it works then go for the other ones) that is shared out by the fileserver- automatically go to the home directory (sssd and samba closely related- sharing them out and mount (L:drive(win) possibly done in the properties))
+(2)Radius- mikrotik, boards
+//Win10 needs to be rejoined to the domain
+g-id in the User properties (10000)
+(1)Add the other user (UPDATE: all work and are good)
+Noall
+March 29, 2016; 7:30pm
+ 
+Add Roles and Features
+Added Network Policy and Access Services
+Network Policy Server & Host Credential Authorization Protocol
+THIS IS A FANTASTICAL, MAGICAL LINK FOR RADIUS WORK: https://www.freeccnaworkbook.com/blog/ccna-security/cisco-ios-radius-authentication-with-windows-server-2012-nps
+Followed this link for the step by step process- changed a few things (IP and a name). The next bit is the simmered down version of it:
+After adding the role (see bullet #1)…
+Under Tools- opening the Network Policy Server…
+Right click on the NPS global thing and registered the client (went through the steps…)
+Right clicked on RADIUS Clients file (under the RADIUS Clients and Servers folder) and created a new one
+Under the Settings tab
+Friendly name it (we named it the Cisco c1841 and Cisco c2960x)
+IP- resolved it with c1841.group5.itc and c2960x.group5.itc, respectively
+The shared secret was created in the Templates (right clicked on the Shared Secrets under Templates Management for ‘New’ and created it to be group5 for it all)
+Under the Advanced tab
+Vendor name- Cisco. Then clicked ‘ok’ to leave the Wizard.
+Under the Policies folder, right clicked on the Network Policies folder and created a new one
+Policy name: TheRealKimPossible (Cisco LEVEL 15)
+Leave the network access server alone. *next*
+Add the User Groups
+*Add Groups…*
+Object name: Domain Users (check names) *ok*
+*Next* Leave the default
+*Next* Uncheck the Microsoft defaults and check the Unencrypted authen. (Say no to the dialog box)
+Hit *next* on the following screen since we don’t care about that crap…
+Then on the Standard RADIUS Attributes
+Removed the Framed whatever
+Edited the Service-Type to value Login (under the Other radio button)
+Under the Vendor Specific
+Add the only Cisco Vendor option they give you
+Under the Attribute value: shell:priv-lvl=15
+After all that is done, went into the c1841 putty session and entered the following:
+conf t
+aaa group server radius NAP
+server-private 10.2.8.3
+aaa authentication login default group NAP local
+aaa authorization exec default group NAP local if-authenticated
+aaa authorization console
+Once that one was set up and working (tested it in the c1841 putty- entered the password and it went to the enabled function), ran the sh run command and copy pasta-ed that into the c2960x command line to have it do the same thing-
+aaa group server radius NAP
+  server-private 10.2.8.3 key group5
+aaa authentication login default group NAP local
+aaa authentication console
+aaa authentication exec default group NAP local if-authenticated
+Changed the preferred DNS server IP in Ethernet
+127.0.0.1 (verifying against itself so it was possible to just put in ‘c1841’ without the IP
+(this was prior to finishing up the RADIUS crap)
+ 
+Get RADIUS set up on the Mikrotik
+Check about SSH on the boards- they won’t connect in the Royal TS
+Create samba share- without a bunch of errors
+Test the win10 box to share with debian
+ 
+Noall
+March 30, 2016; 8:50pm
+ 
+IPs (for clarification)
+Mikrotik
+10.2.8.1 (webFig- put this in the browser search bar)
+c2960x
+10.2.8.2
+WinServer
+10.2.8.3
+Debian
+10.2.8.4
+ns1
+10.2.8.5
+ns2
+10.2.8.6
+Win10
+192.168.209.90
+c1841
+172.16.48.241
+ 
+ 
+Ask Lucas to get the WinServer back onto Royal TS…
+ 
+Noall
+March 31, 2016; 9:45am
+ 
+Inside the webFig
+Radius tab
+Add New
+Login
+domain: group5.itc
+Address: 10.2.8.3
+Secret: *password*
+Authen port: 1812
+Account port: 1813
+Timeout: 300ms
+Systems tab
+Users
+AAA
+Chose ‘Use Radius’ radio button instead
+ns2
+smb.conf
+Added:
+workgroup = ns2
+realm = group5.itc
+dedicated keytab file = FILE:/etc/samba/samba.keytab
+kerberos method = dedicated keytab
+security = ads
+(Tingley joins @11:30am)
+Inside Windows Server
+NPS
+Added mikrotik to RADIUS client
+Added network policy for mikrotik
+Group policy manager
+Password policy
+Store passwords using reversible encryption enable
+ 
+We don’t need Radius on ns2 since we did it through the WinServer
+See if we can test the Mikrotik for Radius
+Possibly need to change the path in [ourfiles] since the home may not be there anymore
+*Furnari came in around 2:20ish
+ 
+Noall
+March 31, 2016; 6:00pm
+ 
+Ask Lucas about the CIFS being a part of SAMBA and how samba plays with SSSD
+ 
+http://www.tldp.org/HOWTO/SMB-HOWTO-8.html
+http://www.linuxnix.com/8-ways-to-mount-smbfs-samba-file-system-in-linux/
+ 
+Furnari, Tingley
+April 1, 2016; 1:30pm
+ 
+In the global section of the smb.conf file, workgroup was changed to "GROUP5"
+realm was added and given the field "group5.itc"
+kerberos method was added and given the field "system keytab"
+security was added and given the field "ads"
+All of the printer spool configurations were commented out (profiles, printers, print$)
+in smb.conf commented out the [home]
+added individual directories for each user with respective permissions
+example. [global id]
+comment = global id directories
+read only = no
+writeable = yes
+locking = no
+path = /mnt/home/global id
+guest ok = no
+valid users = global id
+create mask = 0755
+brows  able = yes
+mounted the L: drive for each user account to their network drive
+In Windows server 2012 edited the group policy managment
+Default Domain Policy
+edit, preferences, windows settings, drive maps
+L: drive
+create action
+path \\debian\home\%USERNAME%
+  
+
+Tingley
+
+April 1st, 2016; 5:30 / April 2nd, 2016; 3:30
+
+In Windows server 2012 Active Directory Users and Computers
+In users file, right click on user and go to properties
+profile tab, Home folder: Connect: L: to: \\debian\groupid (only mine works at the moment)
+had to reconnect WIN10 to windowsserver and debian
+installed pam_mount on ns2 to auto mount files
+edited the vim /etc/security/pam_mount.conf.xml
+<volume fstype="cifs" server ="debian" path ="%(USER)" mountpoint="/home/group5.itc/%(USER)" />

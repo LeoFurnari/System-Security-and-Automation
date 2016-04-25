@@ -1,0 +1,85 @@
+Furnari, Tingley
+
+Feb 23, 2016- 2pm
+
+Created RAID 5 using
+Downloaded it-
+apt-get install mdadm
+mdadm –create /dev/md0
+mdadm –create –verbose /dev/md0 –level=5 –raid-devices=3 /dev/sda /dev/sdb /dev/sdd
+Furnari, Noall, Tingley
+
+Feb 27, 2016- 12 noon
+
+Added to etc/exports
+/srv/nfsroot 10.0.0.0/24(ro,no_root_squash,no_subtree_check)
+Downloaded syslinux, located in /usr/lib/ directory
+Confused between /etc/exports and a file named etc.exports inside the nfs-kernel-server, not sure where to put similar command as mentioned in 2a.
+Whether it goes in the NFS2 folders or the consecutive (NSF3-5) folders is what we can’t figure out
+Added the debian on the bind reverse and the ns config screen
+Installed tftp on ns1
+/etc/default sudo vim tfpd-hpa
+Changed the directory to: /mnt/ns1lookup
+ 
+
+Furnari, Noall, Tingley
+
+Feb 28, 2016- 12 noon
+
+Our router domain name is a site that is making it so we can’t access the router
+We needed to reinstall tftp on the servers and in order to do the automated backup, we need the router  to work
+Changed the IP domain name to group5.itc instead of what it was (group5.net) and it still won’t work
+Created a directory: tftpbackup
+etc/host.allow ALL: (router IP)192.168.209.89, 10.2.8.4, 10.2.8.5, 10.2.8.6, 172.16.48.241, 10.2.8.1
+etc/host.deny ALL: PARANOID (denies everything but the allowed IPs)
+Installed ntp for the time stamps
+The time was incorrect, but the date was correct
+Created the Microtek automatic backup
+4am, every one day
+Mounted ns1 yesterday, ns2 today-
+/mnt mount –v debian.group5.itc:/mnt/ns1backup /mnt/ns1backup
+/mnt mount –v debian.group5.itc:/mnt/ns2backup /mnt/ns2backup
+/mnt cd ns1backup
+/mnt/ns1backup echo “hello world” >> test
+Read the test file with either: ‘vim test’ or ‘cat test’
+umount /mnt/ns1backup
+Created a script to synchronize the backups
+Created a file- vim ns1backups.sh
+Modified the file with the script
+http://www.linuxdevcenter.com/pub/a/linux/2003/03/06/nfs_backup.html
+Downloaded and configured Cron for the time and date on ns1, ns2
+sudo apt-get install gnome-schedule
+sudo crontab -e
+0 04 * * 0 root /mnt/ns1backup/ns1backups.sh
+Noall
+
+Feb 29,2016- 8:30am
+
+Added the c2960x (10.2.8.2) to the ns1: sudo vi /etc/bind/bd.group5.itc
+Added the c1841(172.16.48.241) to the ns1: sudo vi /etc/bind/bd.group5.itc
+Fileserver works, tftp wasn’t installed correctly- that’s why it didn’t work (it was looking for a file and not the program)
+RAID5 not mounted- made it permanent fstab
+blkid /dev/md0
+Created the tftpbackup dir
+Can now mount the mnt with one command by: mount /mnt
+The only allowed IPs in the tftp should be the network routers (no ns1/2 or win)
+(Read)Deliverables- the DNS entries
+Added the DNS and ssh to the ciscos and microtik
+Need to check to see if the ESIx has a DNS name
+Created the microtik on the ospf win box-
+Furnari, Noall, Tingley
+
+Mar 15, 2016- 10am
+
+Added the debian and ns1 script
+ 
+
+HH
+
+https://raid.wiki.kernel.org/index.php/RAID_setup#RAID-4.2F5.2F6
+
+cat hosts.allow
+
+ns1.group5.itc/ ns2.group5.itc
+
+ns1backups.sh
